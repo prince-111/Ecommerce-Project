@@ -13,38 +13,51 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-
-model User{
-  id  String @id @default(uuid())
-  name String
-  email String @unique
-  password String
-  role Role @default(USER)
-  product Product[]
-  orders Order[]
+model User {
+  id        String   @id @default(uuid())
+  name      String
+  email     String   @unique
+  password  String
+  role      Role     @default(USER)
+  products  Product[]
+  orders    Order[]
+  address   Address?
 }
 
-model Product{
-  id String @id @default(uuid())
-  name String
+model Address {
+  id          String  @id @default(uuid())
+  street      String
+  city        String
+  state       String
+  postalCode  String
+  country     String
+  userId      String  @unique
+  user        User    @relation(fields: [userId], references: [id])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Product {
+  id          String   @id @default(uuid())
+  name        String
   description String
-  price Float
-  stock Int
-  images String[]
-  sellerId String
-  seller User @relation(fields: [sellerId], references: [id])
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  price       Float
+  stock       Int
+  images      String[]
+  sellerId    String
+  seller      User     @relation(fields: [sellerId], references: [id])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }
 
-model Order{
-  id String @id @default(uuid())
-  userId String
-  user User @relation(fields: [userId], references: [id])
-  products Json // Store product deatails: ID, name, quantity, price.
-  amount Float
-  status String
-  createdAt DateTime @default(now())
+model Order {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  products  Json     // Stores product details: ID, name, quantity, price.
+  amount    Float
+  status    String    @default("Pending")
+  createdAt DateTime  @default(now())
 }
 
 enum Role {
