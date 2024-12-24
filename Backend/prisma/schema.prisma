@@ -19,6 +19,7 @@ model User {
   email     String   @unique
   password  String
   role      Role     @default(USER)
+  image     String?  // Optional profile image
   products  Product[]
   orders    Order[]
   address   Address?
@@ -40,12 +41,13 @@ model Address {
 }
 
 model Product {
-  id          String   @id @default(uuid())
-  name        String
-  description String
-  price       Float
-  stock       Int
-  images      String[]
+  id            String   @id @default(uuid())
+  name          String
+  description   String
+  price         Float
+  stock         Int
+  mainImage     String   // Primary product image
+  additionalImages String[] // Additional product images
   sellerId    String
   seller      User     @relation(fields: [sellerId], references: [id])
   createdAt   DateTime @default(now())
@@ -59,6 +61,7 @@ model Order {
   products  Json     // Stores product details: ID, name, quantity, price.
   amount    Float
   status    String    @default("Pending")
+  address   Json      // Store shipping details here
   createdAt DateTime  @default(now())
 }
 
