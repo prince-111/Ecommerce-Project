@@ -21,8 +21,9 @@ model User {
   role      Role     @default(USER)
   image     String?  // Optional profile image
   products  Product[]
-  orders    Order[]
   address   Address?
+  orders    Order[]   @relation("UserOrders")// Orders where the user is the buyer
+  sellerOrders Order[]  @relation("SellerOrders")// Orders where the user is the seller 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
@@ -57,12 +58,15 @@ model Product {
 model Order {
   id        String   @id @default(uuid())
   userId    String
-  user      User     @relation(fields: [userId], references: [id])
+  user      User     @relation("UserOrders",fields: [userId], references: [id])
+  sellerId  String
+  seller    User     @relation("SellerOrders", fields: [sellerId], references: [id])
   products  Json     // Stores product details: ID, name, quantity, price.
   amount    Float
-  status    String    @default("Pending")
+  status    OrderStatus   @default(PENDING)
   address   Json      // Store shipping details here
   createdAt DateTime  @default(now())
+  updatedAt DateTime    @updatedAt
 }
 
 enum Role {
@@ -71,3 +75,10 @@ enum Role {
   USER
 }
 
+enum OrderStatus {
+  PENDING
+  PROCESSING
+  DISPATCHED
+  DELIVERED
+  CANCELLED
+}
