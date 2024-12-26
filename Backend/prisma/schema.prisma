@@ -21,7 +21,7 @@ model User {
   role      Role     @default(USER)
   image     String?  // Optional profile image
   products  Product[]
-  address   Address?
+  address   Address[]
   orders    Order[]   @relation("UserOrders")// Orders where the user is the buyer
   sellerOrders Order[]  @relation("SellerOrders")// Orders where the user is the seller 
   createdAt DateTime @default(now())
@@ -30,13 +30,14 @@ model User {
 
 model Address {
   id          String  @id @default(uuid())
+  userId      String 
+  user        User    @relation(fields: [userId], references: [id])
   street      String
   city        String
   state       String
   postalCode  String
   country     String
-  userId      String  @unique
-  user        User    @relation(fields: [userId], references: [id])
+  orders      Order[]
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 }
@@ -65,8 +66,12 @@ model Order {
   seller    User     @relation("SellerOrders", fields: [sellerId], references: [id])
   products  Json     // Stores product details: ID, name, quantity, price.
   amount    Float
+  paymentId String? // payment id
+  paymentOderId String? // order id
+  paymentStatus  String @default("PENDING")
   status    OrderStatus   @default(PENDING)
-  address   Json      // Store shipping details here
+  addressId String
+  address Address @relation(fields: [addressId], references: [id])
   createdAt DateTime  @default(now())
   updatedAt DateTime    @updatedAt
 }
