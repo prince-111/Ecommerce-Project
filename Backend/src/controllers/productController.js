@@ -83,6 +83,98 @@ exports.getAllProducts = async (req, res) => {
   }
 };
 
+exports.updateProduct = async (req, res) => {
+  try {
+    // Debug logs
+    console.log("Files:", req.files);
+    console.log("Body raw:", req.body);
+    console.log("Params id:", req.params.id);
+
+    // Validate the product exists
+    const product = await prisma.product.findUnique({
+      where: { id: req.params.id }, // Use the string directly
+    });
+
+    if (!product) {
+      return res.status(404).json({ error: "Product not found" });
+    }
+
+    // Validate that the user is authorized to update this product
+    if (product.sellerId !== req.user.id) {
+      return res
+        .status(403)
+        .json({ error: "Not authorized to update this product" });
+    }
+
+    // Prepare update data
+    const updateData = { ...req.body };
+
+    // Handle files if provided
+    if (req.files?.mainImage?.[0]?.path) {
+      updateData.mainImage = req.files.mainImage[0].path;
+    }
+
+    if (req.files?.additionalImages?.length > 0) {
+      updateData.additionalImages = req.files.additionalImages.map(
+        file => file.path
+      );
+    }
+
+    // Validate and parse numeric fields if provided
+    if (updateData.price) {
+      const parsedPrice = parseFloat(updateData.price);
+      if (isNaN(parsedPrice)) {
+        return res.status(400).json({ error: "Invalid price value" });
+      }
+      updateData.price = parsedPrice;
+    }
+
+    if (updateData.stock) {
+      const parsedStock = parseInt(updateData.stock, 10);
+      if (isNaN(parsedStock)) {
+        return res.status(400).json({ error: "Invalid stock value" });
+      }
+      updateData.stock = parsedStock;
+    }
+
+    // Update the product in the database
+    const updatedProduct = await prisma.product.update({
+      where: { id: req.params.id }, // No parsing necessary, id is a string
+      data: updateData,
+    });
+
+    // Respond with the updated product
+    res.json({ success: true, product: updatedProduct });
+  } catch (error) {
+    console.error("Error updating product:", error);
+    res.status(500).json({ error: error.message });
+  }
+};
+
+exports.deleteProduct = async (req, res) => {
+  try {
+    const product = await prisma.product.findUnique({
+      where: { id: req.params.id },
+    });
+
+    if (!product) {
+      return res.status(404).json({ error: "Product not found" });
+    }
+
+    if (req.user.role !== "SELLER") {
+      return res.status(403).json({ error: "Not authorized" });
+    }
+
+    await prisma.product.delete({
+      where: { id: req.params.id },
+    });
+
+    res.json({ success: true, message: "Product deleted" });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
 exports.getProductById = async (req, res) => {
   try {
     const product = await prisma.product.findUnique({
