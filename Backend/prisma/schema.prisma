@@ -14,79 +14,100 @@ datasource db {
 }
 
 model User {
-  id        String   @id @default(uuid())
+  id        String    @id @default(uuid())
   name      String
-  email     String   @unique
+  email     String    @unique
   password  String
-  role      Role     @default(USER)
-  image     String?  // Optional profile image
+  role      UserRole  @default(USER)
+  image     String? // Optional profile image
   products  Product[]
   address   Address[]
-  orders    Order[]   @relation("UserOrders")// Orders where the user is the buyer
-  sellerOrders Order[]  @relation("SellerOrders")// Orders where the user is the seller 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  cart      Cart? // One-to-one relationship with Cart
+  orders    Order[]   @relation("UserOrders") // Orders where the user is the buyer
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
 }
 
 model Address {
-  id          String  @id @default(uuid())
-  userId      String 
-  user        User    @relation(fields: [userId], references: [id])
-  street      String
-  city        String
-  state       String
-  postalCode  String
-  country     String
-  orders      Order[]
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id         String   @id @default(uuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id])
+  street     String
+  city       String
+  state      String
+  postalCode String
+  country    String
+  orders     Order[]
+  shipping   Shipping[]
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 }
 
 model Product {
-  id            String   @id @default(uuid())
-  name          String
-  description   String
-  price         Float
-  stock         Int
-  mainImage     String   // Primary product image
+  id               String    @id @default(uuid())
+  name             String
+  description      String
+  price            Float
+  stock            Int
+  mainImage        String // Primary product image
   additionalImages String[] // Additional product images
-  sellerId    String
-  seller      User     @relation(fields: [sellerId], references: [id])
-  categoryId   String? 
-  category     Category?   @relation(fields: [categoryId], references: [id])
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  sellerId         String
+  seller           User      @relation(fields: [sellerId], references: [id])
+  categoryId       String?
+  category         Category? @relation(fields: [categoryId], references: [id])
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
 }
 
 model Order {
-  id        String   @id @default(uuid())
-  userId    String
-  user      User     @relation("UserOrders",fields: [userId], references: [id])
-  sellerId  String
-  seller    User     @relation("SellerOrders", fields: [sellerId], references: [id])
-  products  Json     // Stores product details: ID, name, quantity, price.
-  amount    Float
-  paymentId String? // payment id
+  id            String      @id @default(uuid())
+  userId        String
+  user          User        @relation("UserOrders", fields: [userId], references: [id])
+  products      Json // Stores product details: ID, name, quantity, price.
+  amount        Float
+  paymentId     String? // payment id
   paymentOderId String? // order id
-  paymentStatus  String @default("PENDING")
-  status    OrderStatus   @default(PENDING)
-  addressId String
-  address Address @relation(fields: [addressId], references: [id])
-  createdAt DateTime  @default(now())
-  updatedAt DateTime    @updatedAt
+  paymentStatus String      @default("PENDING")
+  status        OrderStatus @default(PENDING)
+  addressId     String
+  address       Address     @relation(fields: [addressId], references: [id])
+  shipping      Shipping[]
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+}
+
+model Cart {
+  id         String   @id @default(uuid())
+  userId     String   @unique // Ensure one to one 
+  user       User     @relation(fields: [userId], references: [id])
+  items      Json // Stores array of items: { productId, quantity, price, name }
+  totalPrice Float    @default(0) // Automatically calculated
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 }
 
 model Category {
-  id          String     @id @default(uuid())
-  name        String     @unique
+  id          String    @id @default(uuid())
+  name        String    @unique
   description String?
-  products    Product[]  // One-to-many relationship
+  products    Product[] // One-to-many relationship
 }
 
-enum Role {
+model Shipping {
+  id        String   @id @default(uuid())
+  orderId   String
+  addressId String
+  order     Order    @relation(fields: [orderId], references: [id]) // Add opposite relation in Order
+  address   Address  @relation(fields: [addressId], references: [id])
+  createdAt DateTime @default(now())
+}
+
+
+enum UserRole {
   ADMIN
   SELLER
   USER
+  DELIVERY
 }
 
 enum OrderStatus {
