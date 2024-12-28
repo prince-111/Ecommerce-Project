@@ -4,12 +4,14 @@
 // Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
 // Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
 
+
+
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "mysql"
   url      = env("DATABASE_URL")
 }
 
@@ -19,19 +21,19 @@ model User {
   email     String    @unique
   password  String
   role      UserRole  @default(USER)
-  image     String? // Optional profile image
+  image     String?   // Optional profile image
   products  Product[]
   address   Address[]
-  cart      Cart? // One-to-one relationship with Cart
+  cart      Cart?     // One-to-one relationship with Cart
   orders    Order[]   @relation("UserOrders") // Orders where the user is the buyer
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
 }
 
 model Address {
-  id         String   @id @default(uuid())
+  id         String     @id @default(uuid())
   userId     String
-  user       User     @relation(fields: [userId], references: [id])
+  user       User       @relation(fields: [userId], references: [id])
   street     String
   city       String
   state      String
@@ -39,34 +41,39 @@ model Address {
   country    String
   orders     Order[]
   shipping   Shipping[]
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+
+  @@index([userId])
 }
 
 model Product {
   id               String    @id @default(uuid())
   name             String
-  description      String
-  price            Float
+  description      String    @db.Text
+  price            Decimal   @db.Decimal(10, 2)
   stock            Int
-  mainImage        String // Primary product image
-  additionalImages String[] // Additional product images
+  mainImage        String    // Primary product image
+  additionalImages Json      // Changed from String[] to Json for MySQL
   sellerId         String
   seller           User      @relation(fields: [sellerId], references: [id])
   categoryId       String?
   category         Category? @relation(fields: [categoryId], references: [id])
   createdAt        DateTime  @default(now())
   updatedAt        DateTime  @updatedAt
+
+  @@index([sellerId])
+  @@index([categoryId])
 }
 
 model Order {
   id            String      @id @default(uuid())
   userId        String
   user          User        @relation("UserOrders", fields: [userId], references: [id])
-  products      Json // Stores product details: ID, name, quantity, price.
-  amount        Float
-  paymentId     String? // payment id
-  paymentOderId String? // order id
+  products      Json        // Stores product details: ID, name, quantity, price
+  amount        Decimal     @db.Decimal(10, 2)
+  paymentId     String?     // payment id
+  paymentOderId String?     // order id
   paymentStatus String      @default("PENDING")
   status        OrderStatus @default(PENDING)
   addressId     String
@@ -74,22 +81,27 @@ model Order {
   shipping      Shipping[]
   createdAt     DateTime    @default(now())
   updatedAt     DateTime    @updatedAt
+
+  @@index([userId])
+  @@index([addressId])
 }
 
 model Cart {
   id         String   @id @default(uuid())
-  userId     String   @unique // Ensure one to one 
+  userId     String   @unique
   user       User     @relation(fields: [userId], references: [id])
-  items      Json // Stores array of items: { productId, quantity, price, name }
-  totalPrice Float    @default(0) // Automatically calculated
+  items      Json     // Stores array of items: { productId, quantity, price, name }
+  totalPrice Decimal  @db.Decimal(10, 2) @default(0)
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
+
+  @@index([userId])
 }
 
 model Category {
   id          String    @id @default(uuid())
   name        String    @unique
-  description String?
+  description String?   @db.Text
   products    Product[] // One-to-many relationship
 }
 
@@ -97,11 +109,13 @@ model Shipping {
   id        String   @id @default(uuid())
   orderId   String
   addressId String
-  order     Order    @relation(fields: [orderId], references: [id]) // Add opposite relation in Order
+  order     Order    @relation(fields: [orderId], references: [id])
   address   Address  @relation(fields: [addressId], references: [id])
   createdAt DateTime @default(now())
-}
 
+  @@index([orderId])
+  @@index([addressId])
+}
 
 enum UserRole {
   ADMIN
@@ -117,3 +131,118 @@ enum OrderStatus {
   DELIVERED
   CANCELLED
 }
+
+
+// generator client {
+//   provider = "prisma-client-js"
+// }
+
+// datasource db {
+//   provider = "postgresql"
+//   url      = env("DATABASE_URL")
+// }
+
+// model User {
+//   id        String    @id @default(uuid())
+//   name      String
+//   email     String    @unique
+//   password  String
+//   role      UserRole  @default(USER)
+//   image     String? // Optional profile image
+//   products  Product[]
+//   address   Address[]
+//   cart      Cart? // One-to-one relationship with Cart
+//   orders    Order[]   @relation("UserOrders") // Orders where the user is the buyer
+//   createdAt DateTime  @default(now())
+//   updatedAt DateTime  @updatedAt
+// }
+
+// model Address {
+//   id         String   @id @default(uuid())
+//   userId     String
+//   user       User     @relation(fields: [userId], references: [id])
+//   street     String
+//   city       String
+//   state      String
+//   postalCode String
+//   country    String
+//   orders     Order[]
+//   shipping   Shipping[]
+//   createdAt  DateTime @default(now())
+//   updatedAt  DateTime @updatedAt
+// }
+
+// model Product {
+//   id               String    @id @default(uuid())
+//   name             String
+//   description      String
+//   price            Float
+//   stock            Int
+//   mainImage        String // Primary product image
+//   additionalImages String[] // Additional product images
+//   sellerId         String
+//   seller           User      @relation(fields: [sellerId], references: [id])
+//   categoryId       String?
+//   category         Category? @relation(fields: [categoryId], references: [id])
+//   createdAt        DateTime  @default(now())
+//   updatedAt        DateTime  @updatedAt
+// }
+
+// model Order {
+//   id            String      @id @default(uuid())
+//   userId        String
+//   user          User        @relation("UserOrders", fields: [userId], references: [id])
+//   products      Json // Stores product details: ID, name, quantity, price.
+//   amount        Float
+//   paymentId     String? // payment id
+//   paymentOderId String? // order id
+//   paymentStatus String      @default("PENDING")
+//   status        OrderStatus @default(PENDING)
+//   addressId     String
+//   address       Address     @relation(fields: [addressId], references: [id])
+//   shipping      Shipping[]
+//   createdAt     DateTime    @default(now())
+//   updatedAt     DateTime    @updatedAt
+// }
+
+// model Cart {
+//   id         String   @id @default(uuid())
+//   userId     String   @unique // Ensure one to one 
+//   user       User     @relation(fields: [userId], references: [id])
+//   items      Json // Stores array of items: { productId, quantity, price, name }
+//   totalPrice Float    @default(0) // Automatically calculated
+//   createdAt  DateTime @default(now())
+//   updatedAt  DateTime @updatedAt
+// }
+
+// model Category {
+//   id          String    @id @default(uuid())
+//   name        String    @unique
+//   description String?
+//   products    Product[] // One-to-many relationship
+// }
+
+// model Shipping {
+//   id        String   @id @default(uuid())
+//   orderId   String
+//   addressId String
+//   order     Order    @relation(fields: [orderId], references: [id]) // Add opposite relation in Order
+//   address   Address  @relation(fields: [addressId], references: [id])
+//   createdAt DateTime @default(now())
+// }
+
+
+// enum UserRole {
+//   ADMIN
+//   SELLER
+//   USER
+//   DELIVERY
+// }
+
+// enum OrderStatus {
+//   PENDING
+//   PROCESSING
+//   DISPATCHED
+//   DELIVERED
+//   CANCELLED
+// }
