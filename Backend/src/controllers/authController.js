@@ -100,3 +100,42 @@ exports.login = async (req, res) => {
     res.status(5000).json({ success: false, message: error.message });
   }
 };
+
+exports.getAllUser = async (req, res) => {
+  try {
+    const user = await prisma.user?.findMany();
+    res.json({ success: true, user });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+exports.updateUserRole = async (req, res) => {
+  try {
+    const { userId, role } = req.body;
+    const user = await prisma.user.update({
+      where: { id: userId },
+      data: { role },
+    });
+
+    res.json({ success: true, user });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+exports.updateProfileImage = async (req, res) => {
+  try {
+    // const { userId, profileImage } = req.body;
+    // const user = await prisma.user.update({
+    //   where: { id: userId },
+    //   data: { profileImage },
+    // });
+
+    // res.json({ success: true, user });
+
+    res.send("yet logic is not implemented 😂");
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
